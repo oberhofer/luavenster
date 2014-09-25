@@ -1,0 +1,572 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>LuaVenster</title>
+	<link rel="stylesheet" type="text/css" href="lua.css" />
+</head>
+<body>
+
+<p><img src="logo.png" alt="LuaVenster logo" title="LuaVenster logo"/></p>
+
+<h1>Introduction</h1>
+
+<p>LuaVenster is an object oriented wrapper for GUI applications on top of the Windows API. </p>
+
+<p>Although the name LuaVenster is a reminescent to the Win32 Python GUI libraries 
+Venster and VensterCE they have no common roots other than the same spirit in being a 
+minimal lightweight wrapper that integrates smoothly into the target language Lua.</p>
+
+<p>Please note that the development of LuaVenster is demand driven, 
+so not all functionality of WinAPI controls is wrapped, yet. </p>
+
+<h2>Features</h2>
+
+<ul>
+    <li>object oriented abstraction for GUI application</li>
+    <li>wrapper classes for windows controls</li>
+    <li>support for different standard layouts (fill, row, border, grid, sash)</li>
+    <li>layout for listview columns</li>
+    <li>popup layout to support tab control usage</li>
+</ul>
+
+<h1>Dependencies</h1>
+
+<p>LuaVenster depends on the</p>
+
+<ul>
+    <li><a href="http://github.com/oberhofer/luacwrap">LuaCwrap project</a></li>
+    <li><a href="http://github.com/oberhofer/luawinapi">LuaWinAPI project</a></li>
+</ul>
+
+<h1>Installation via Luarocks</h1>
+
+<h2>Prerequisites</h2>
+
+<p>For a beginner I would recommend to install the latest "Lua for Windows" 
+setup from from the <a href="http://luaforwindows.googlecode.com">Lua for windows project</a> and install 
+LuaVenster via LuaRocks.</p>
+
+<p>Install on console via </p>
+
+<pre><code>luarocks install luavenster
+</code></pre>
+
+<h1>Reference</h1>
+
+<h2>Application</h2>
+
+<p>The starting point of a LuaVenster project is the application object, so every 
+LuaVenster application contains these two lines:</p>
+
+<pre><code>local app = venster.Application(mainWindow)
+app:run() 
+</code></pre>
+
+<p>It displays the mainWindow and starts the main message loop.</p>
+
+<h2>GuiComponent</h2>
+
+<p>This is the base class for all visible and hidden GUI components. Descendants are</p>
+
+<ul>
+    <li>Panel  (hidden place holder)</li>
+    <li>Window (base class of all visible GUI components)</li>
+</ul>
+
+<p>Every GuiComponent supports a preferred size (via getPreferredSize()) and most of 
+the derived classes have constructor functions which have the same name as the 
+class, e.g. Window() or Panel(). Most of these constructor functions take a
+Lua table which is copied into the created object.
+This enables to describe GUIs in a declarative way by specifiying</p>
+
+<ul>
+    <li>zero or more child components</li>
+    <li>an optional associated layout object or function</li>
+</ul>
+
+<p>within this table.</p>
+
+<h2>Panel</h2>
+
+<p>A panel is a place holder and necessary to support boxed layouts.</p>
+
+<h2>Window</h2>
+
+<p>Window is the base class of all visible GUI components. All Controls are derived from this class.</p>
+
+<p>Every window object is treated by the message loop as an array of message handlers indexed by 
+the message id. In most cases LuaVenster hides this fact by defining the core message handler 
+in the metatable and route then to specific OnXXX functions the user can override.
+In most cases only a few of this overrides are necessary.</p>
+
+<h3>Window() constructor</h3>
+
+<p>In the argument table of the Window you can specify an optional menu object which describes 
+the window main menu.</p>
+
+<h4>Usage</h4>
+
+<p>This example code specifies a main window with five child controls
+and a associated fill layout along with Handlers for the OnCreate and OnClose event:</p>
+
+
+<pre><code>local mainWindow = venster.Window{
+  title = _T("Main window"),
+
+  children = {
+    venster.Label{
+      id = "btnSouth",
+      title = _T"South",
+      style = bor(WS_VISIBLE, WS_BORDER)
+    },
+
+    venster.Button{
+      id = "btnWest",
+      title = _T"West",
+    },
+
+    venster.Button{
+      id = "btnNorth",
+      title = _T"North",
+    },
+
+    venster.Button{
+      id = "btnEast",
+      title = _T"East",
+    },
+
+    venster.Label{
+      id = "btnCenter",
+      title = _T"Center",
+      style = bor(WS_VISIBLE, WS_BORDER)
+    },
+  },
+
+  layout = venster.FillLayout{
+    -- dir = "vertical",
+    dir = "horizontal",
+    spacing = 20,
+    "btnSouth",
+    "btnWest",
+    "btnNorth",
+    "btnEast",
+    "btnCenter"
+  },
+
+  OnCreate = function(self, createStruct)
+    local childs = self.children
+
+    -- add button handlers to the child controls
+    for _, ch in ipairs({ childs.btnSouth, childs.btnWest, childs.btnNorth, childs.btnEast, childs.btnCenter }) do
+      ch.OnClicked = function (self)
+        self:msgbox("Clicked Item " .. self.title, "Info", MB_OK)
+      end
+    end
+    return nil
+  end,
+
+  OnClose = function (self)
+    winapi.PostQuitMessage(0)
+    return 0
+  end
+}
+</code></pre>
+
+<h3>Event methods</h3>
+
+<p>...</p>
+
+<h3>Wrapper methods</h3>
+
+<p>...</p>
+
+<h2>Controls</h2>
+
+<p>Currently there are wrappers for the following Controls:</p>
+
+<ul>
+    <li>Button</li>
+    <li>Label</li>
+    <li>Edit</li>
+    <li>ListView</li>
+    <li>TreeView</li>
+    <li>TabControl</li>
+    <li>Menu</li>
+</ul>
+
+<h2>Layouts</h2>
+
+<h3>Arrange child windows</h3>
+
+<p>The layouts used for arranging child windows are fill, row, border, grid and sash layout.</p>
+
+<h4>Fill layout</h4>
+
+<p>The fill layout is as follows:</p>
+
+<pre><code> +------------------+
+ |      child       |       dir(ection) = "vertical"
+ +------------------+
+ |      child       |
+ +------------------+
+ |      child       |
+ +------------------+
+</code></pre>
+
+<p>or:</p>
+
+<pre><code> +-----------------+
+ |     |     |     |       dir(ection) = "horizontal"
+ |     |     |     |
+ |child|child|child|
+ |     |     |     |
+ |     |     |     |
+ +-----------------+
+</code></pre>
+
+<p>The available space is divided into equal sized parts.</p>
+
+<h5>Usage:</h5>
+
+<pre><code>FillLayout{
+  dir  = "horizontal" | "vertical",
+  spacing  = horizontal/vertical spacing [pixels],
+  &lt;list of childs&gt;
+}
+</code></pre>
+
+<h5>Example:</h5>
+
+<pre><code>self.layout = venster.FillLayout{
+  dir = "horizontal",
+  self.btnSouth,
+  self.btnWest,
+  self.btnNorth,
+  self.btnEast,
+  self.btnCenter
+}
+</code></pre>
+
+
+<h4>Row layout</h4>
+
+<p>This layout lays out components like text. If Components do not fit into
+one line (row), the next Components are moved to the next line (row).</p>
+
+<p>Intended 'line breaks' could be inserted by adding "break" string to the
+list of childs.</p>
+
+<p>If wrap=true automatic line breaks will be inserted if "line" exceeds
+the available space.</p>
+
+<p>If pack=false then all childs get the size of the biggest child.</p>
+
+<p>If justify is set, the childs are spread across the available space.</p>
+
+<p>If fill is set all childs get the same height/width depending on
+horizontal/vertical layout.</p>
+
+<p>If center is set, controls in a row are centered vertically in
+each cell for horizontal layouts, or centered horizontally in each cell
+for vertical layouts.</p>
+
+<h5>Usage:</h5>
+
+<pre><code>  RowLayout{
+     dir     = "horizontal" | "vertical",
+     spacing = horizontal/vertical spacing [pixels],
+     margin  = { &lt;left&gt;, &lt;top&gt;, &lt;right&gt;, &lt;bottom&gt; },
+    &lt;list of childs&gt;
+  }
+</code></pre>
+
+<h5>Example:</h5>
+
+<pre><code>self.layout = venster.RowLayout{
+  dir = "horizontal",
+  spacing = 2,
+  margin  = venster.Rect(2, 2, 2, 2),
+  self.btnSouth,
+  self.btnWest,
+  self.btnNorth,
+  self.btnEast,
+  self.btnCenter
+}
+</code></pre>
+
+<h4>Border layout</h4>
+
+<p>This layout has up to 5 childs called</p>
+<pre><code> south
+ east
+ north
+ west
+ center
+</code></pre>
+
+<p>Layout is as follows:</p>
+
+<pre><code> +------------------+
+ |      south       |
+ +---+----------+---+
+ | w |          | e |
+ | e |          | a |
+ | s |  center  | s |
+ | t |          | t |
+ |   |          |   |
+ +---+----------+---+
+ |      north       |
+ +------------------+
+</code></pre>
+
+<p>Optional the corners could be unfilled:</p>
+
+<pre><code>     +----------+
+     |  south   |
+ +---+----------+---+
+ | w |          | e |
+ | e |          | a |
+ | s |  center  | s |
+ | t |          | t |
+ |   |          |   |
+ +---+----------+---+
+     |  north   |
+     +----------+
+</code></pre>
+
+<p>Height of south/north and width of west/east is determined from
+preferredLayoutSize() of the contained controls.</p>
+
+<h5>Usage:</h5>
+
+<pre><code>BorderLayout{
+  fillCorners = true | false,
+  south       = &lt;child view&gt;,
+  west        = &lt;child view&gt;,
+  north       = &lt;child view&gt;,
+  east        = &lt;child view&gt;,
+  center      = &lt;child view&gt;
+}
+</code></pre>
+
+<h5>Example:</h5>
+
+<pre><code>self.layout = venster.BorderLayout{
+  fillCorners = true,
+  south       = self.btnSouth,
+  west        = self.btnWest,
+  north       = self.btnNorth,
+  east        = self.btnEast,
+  center      = self.btnCenter
+}
+</code></pre>
+
+<h4>Grid layout</h4>
+
+<p>The grid layout has n columns or rows and up to m childs.</p>
+
+<p>Layout is as follows (example):</p>
+
+<pre><code> +---------+---------------------+----------+
+ |    1    |          2          |     3    |
+ +---------+----------+----------+----------+
+ |    4    |  empty   |    5     |  empty   |
+ +---------+----------+----------+----------+
+ |                                          |
+ |                                          |
+ +------------------------------------------+
+</code></pre>
+
+<h5>Remarks:</h5>
+
+<p>Column height and row width is determined by the
+tallest/widest child in column/row.</p>
+
+<p>The layout gets an table of row tables, where ">" and "&lt;" could
+be used to expand the left or right child to span further cells.</p>
+
+<p>Row/Column sizes could be specified, where
+positive number is fixed width/height in pixel
+* 0 means shrink to fit
+* -1 to -100 is percent of parent width
+* &lt; -100 means use rest (expand)</p>
+
+<h5>Usage:</h5>
+
+<pre><code>GridLayout{
+  [colSizes = { list of sizes },]
+  { row_1 },
+  ...
+  { row_n }
+}
+</code></pre>
+
+<h5>Example:</h5>
+
+<pre><code>self.layout = venster.GridLayout{
+  colSizes = { 0, -200, -50),
+  { self.btn_1, self.btn_2, "&gt;"         , self.btn_3  },
+  { self.btn_4, ""        , self.btn_5                }
+}
+
+-- set row/column layout data
+self.layout.setRowData(1, { size = "30%", halign="center" } )   -- 30 %
+self.layout.setColData(1, { size = 30,    halign="center" } )   -- 30 pixel
+self.layout.setColData(2, { size = -30,   halign="left"   } )   -- 30 %
+self.layout.setColData(3, { valign="fill", halign="fill"  } )   -- expand column 2
+
+-- set cell layout data
+self.layout.setCellData(3, 1, { fill=true
+</code></pre>
+
+<p>This results in:    </p>
+
+<pre><code> +---------+---------------------+----------+
+ |    1    |          2          |     3    |
+ +---------+----------+----------+----------+
+ |    4    |  empty   |    5     |  empty   |
+ +---------+----------+----------+----------+
+</code></pre>
+
+<h4>Sash layout</h4>
+
+<p>The sash layout provides movable sashes between childs to support resizeable child width/height.
+The layout is as follows:</p>
+
+<pre><code> +------------------+
+ |      child       |       dir(ection) = "vertical"
+ +------------------+
+ |      child       |
+ +------------------+
+ |      child       |
+ +------------------+
+</code></pre>
+
+<p>or:</p>
+
+<pre><code> +-----------------+
+ |     |     |     |       dir(ection) = "vertical"
+ |     |     |     |
+ |child|child|child|
+ |     |     |     |
+ |     |     |     |
+ +-----------------+
+</code></pre>
+
+<p>The Layout fills whole available space.
+Initial size of childs is determined by the (relative) start positions
+specified in self.layout.positions table.</p>
+
+<h5>Usage:</h5>
+
+<pre><code>SashLayout{
+    dir  = "horizontal" | "vertical",
+  positions = { list of positions in percent (1.0 = 100%) },
+  &lt;list of childs&gt;
+}
+</code></pre>
+
+<h5>Example:</h5>
+
+<pre><code>self.layout = venster.SashLayout{
+  parent    = self,
+  -- dir       = "horizontal",
+  dir       = "vertical",
+  positions = { 0.2, 0.4 },
+  self.btnLeft,
+  self.btnMiddle,
+  self.btnRight
+}
+</code></pre>
+
+<h3>Size listview columns</h3>
+
+<p>ListViewColumnLayout is a special layout that is used to adjust the widths of listview columns.
+The sizes are specified in percent of the listview size.</p>
+
+<h4>Usage</h4>
+
+<pre><code>children = {
+  venster.ListView{
+    id = "listView",
+    title  = _T"ListView",
+    style  = bor(LVS_REPORT,LVS_SHOWSELALWAYS,LVS_SINGLESEL,LVS_ALIGNTOP),
+    exstyle= bor(LVS_EX_FULLROWSELECT),
+    pos    = { x=0, y=0, w=200, h=200 },
+    columns= {
+      { text=_T"Number", percent=0.15 },
+      { text=_T"article",  percent=0.65 },
+      { text=_T"price",  percent=0.20 }
+    },
+    layout = venster.ListViewColumnLayout(),
+  } 
+}
+</code></pre>
+
+<h3>Switch views with TabControl</h3>
+
+<p>The popup layout is used to support tab control usage. It supports multiple child windows
+which share the same area but only one is visible while the others are hidden.</p>
+
+<h4>Usage</h4>
+
+<pre><code>venster.TabControl{
+  id = "tabcontrol",
+  title  = _T("tabcontrol"),
+  style  = bor(WS_CHILD, WS_VISIBLE),
+  pos    = { x=0, y=0, w=100, h=100 },
+  children = {
+    venster.Label{
+      id = "tab1",
+      title  = _T("Tab1"),
+      style=bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
+    },
+    venster.Label{
+      id = "tab2",
+      title  = _T("Tab2"),
+      style=bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
+    },
+  },
+  layout = venster.TabLayout()
+} 
+</code></pre>
+
+<h2>PocketPC/WindowsCE</h2>
+
+<p>There is a special PocketPCFrame class which contains some PocketPC/WindowsCE
+specific code, e.g. to handle the appliction menu.</p>
+
+<h1>Samples</h1>
+
+<p>The samples folder contains example programs which demonstrates different aspects of
+LuaVenster. The samples have the .wlua extension and are therefore associated with the 
+wlua.exe interpreter from "Lua for Windows". </p>
+
+<h1>License</h1>
+
+<p>LuaVenster is licensed under the terms of the MIT license reproduced below.
+This means that LuaVenster is free software and can be used for both academic
+and commercial purposes at absolutely no cost.</p>
+
+<p>Copyright (C) 2011 Klaus Oberhofer</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.</p>
+
+</body></html>
