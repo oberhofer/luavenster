@@ -19,7 +19,7 @@ description = {
 
 dependencies = {
    "lua >= 5.1",
-   "luawinapi >= 1.0.1"
+   "luawinapi >= 1.0.0"
 }
 
 build = {
@@ -35,7 +35,7 @@ build = {
                     ["venster.form"]      = "src/form.lua",
                     ["venster.imagelist"] = "src/imagelist.lua",
                 }
-            }            
+            }
         }
     }
 }
