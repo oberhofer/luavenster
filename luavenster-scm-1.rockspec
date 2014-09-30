@@ -32,7 +32,6 @@ build = {
                     ["venster.init"]      = "src/init.lua",
                     ["venster.utils"]     = "src/utils.lua",
                     ["venster.layout"]    = "src/layout.lua",
-                    ["venster.form"]      = "src/form.lua",
                     ["venster.imagelist"] = "src/imagelist.lua",
                 }
             }
