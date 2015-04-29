@@ -33,6 +33,7 @@ build = {
                     ["venster.utils"]     = "src/utils.lua",
                     ["venster.layout"]    = "src/layout.lua",
                     ["venster.imagelist"] = "src/imagelist.lua",
+                    ["venster.winres"]    = "src/winres.lua",
                 }
             }
         }
