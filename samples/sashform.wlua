@@ -5,32 +5,36 @@
   LICENSE file
 
   demonstrates use of sashes
-  
+
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
+local bit = require("bit")
+local bnot = bit.bnot
+local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 --==============================================================
 
 local mainWindow = venster.Window{
-  title = _T("Main window"),
+  label = _T("Main window"),
+  style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Button{
       id = "btnTop",
-      title = _T("Top"),
+      label = _T("Top"),
     },
 
     venster.Button{
       id = "btnCenter",
-      title  = _T("Center"),
+      label = _T("Center"),
     },
 
     venster.Button{
       id = "btnBottom",
-      title  = _T("Bottom"),
+      label = _T("Bottom"),
   },
 
   },
@@ -49,7 +53,7 @@ local mainWindow = venster.Window{
     -- add button handlers
     for _, ch in ipairs({ childs.btnLeft, childs.btnMiddle, childs.btnRight }) do
       ch.OnClicked = function (self)
-        print("Pressed", self.title)
+        print("Pressed", self.label)
         self:msgbox("Clicked Item " .. self.id, "Info", MB_OK)
       end
     end

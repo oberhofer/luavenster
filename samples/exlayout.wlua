@@ -9,7 +9,7 @@
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 local bit = require("bit")
 local bnot = bit.bnot
@@ -20,7 +20,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  title = _T("Main window"),
+  label = _T("Main window"),
   style = bor(WS_VISIBLE, WS_SYSMENU, WS_BORDER, WS_THICKFRAME),
 
   OnClose = function(self)
@@ -31,7 +31,7 @@ local mainWindow = venster.Window{
   children = {
     venster.ListView{
       id = "listView",
-      title  = _T"ListView",
+      label  = _T"ListView",
       style  = bor(LVS_REPORT,LVS_SHOWSELALWAYS,LVS_SINGLESEL,LVS_ALIGNTOP),
       exstyle= bor(LVS_EX_FULLROWSELECT),
       pos    = { x=0, y=0, w=200, h=200 },
@@ -47,7 +47,7 @@ local mainWindow = venster.Window{
     venster.Window{
       id = "delimiter",
       style = bor(WS_VISIBLE, WS_CHILD),
-      title = _T"delimiter",
+      label = _T"delimiter",
       hbrBackground = winapi.GetStockObject(BLACK_BRUSH),
 
       -- used to return preferred size
@@ -58,7 +58,7 @@ local mainWindow = venster.Window{
     venster.Label{
       id = "editDetails",
       -- style = bor(WS_VISIBLE, ES_READONLY, ES_MULTILINE),
-      title = _T"label",
+      label = _T"label",
 
 --      pos = { x=0, y=0, w=-1, h=30 }
     },

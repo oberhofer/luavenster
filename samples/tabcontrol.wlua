@@ -5,11 +5,11 @@
   LICENSE file
 
   demonstrates tab control
-  
+
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 
 local bit = require("bit")
@@ -21,7 +21,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  title = _T("Main window"),
+  label = _T("Main window"),
   style = bor(WS_VISIBLE, WS_OVERLAPPEDWINDOW),
 
   OnClose = function(self)
@@ -32,24 +32,24 @@ local mainWindow = venster.Window{
   children = {
     venster.Label{
       id = "label",
-      title  = _T("label"),
-      style=bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
+      label = _T("label"),
+      style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
     },
     venster.TabControl{
       id = "tabcontrol",
-      title  = _T("tabcontrol"),
-      style  = bor(WS_CHILD, WS_VISIBLE),
-      pos    = { x=0, y=0, w=100, h=100 },
+      label = _T("tabcontrol"),
+      style = bor(WS_CHILD, WS_VISIBLE),
+      pos   = { x=0, y=0, w=100, h=100 },
       children = {
         venster.Label{
           id = "tab1",
-          title  = _T("Tab1"),
-          style=bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
+          label = _T("Tab1"),
+          style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
         },
         venster.Label{
           id = "tab2",
-          title  = _T("Tab2"),
-          style=bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
+          label = _T("Tab2"),
+          style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
         },
       },
       layout = venster.TabLayout()

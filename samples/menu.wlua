@@ -9,7 +9,7 @@
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 local bit = require("bit")
 local bnot = bit.bnot
@@ -25,7 +25,7 @@ ID_MENU2   = 1002
 
 local mainWindow = venster.Window{
 
-  title = _T("Main window"),
+  label = _T("Main window"),
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   menu   = venster.Menu{
@@ -48,7 +48,7 @@ local mainWindow = venster.Window{
   children = {
     venster.TreeView{
       id = "treeView",
-      title  = _T"Tree",
+      label  = _T"Tree",
       style  = bor(WS_CHILD + WS_VISIBLE + TVS_HASLINES + TVS_LINESATROOT + TVS_HASBUTTONS),
       pos    = { x=0, y=0, w=100, h=100 }
     }

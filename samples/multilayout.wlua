@@ -9,36 +9,40 @@
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
+
+local bit = require("bit")
+local bnot = bit.bnot
+local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 --==============================================================
 
-
 local mainWindow = venster.Window{
-  title = _T("Main window"),
+  label = _T("Main window"),
+  style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Button{
       id = "btnTop",
-      title  = _T"top",
+      label  = _T"top",
       pos    = { x=100, y=0, w=100, h=100 }
     },
 
     venster.Panel{
       id = "panel",
-      title  = _T"panel",
+      label  = _T"panel",
       pos    = { x=100, y=0, w=100, h=100 },
 
       children = {
         venster.Button{
           id = "btnBottomLeft",
-          title  = _T"bottom left",
+          label  = _T"bottom left",
           pos    = { x=0, y=0, w=100, h=100 }
         },
 
         venster.Button{
           id = "btnBottomRight",
-          title  = _T"bottom right",
+          label  = _T"bottom right",
           pos    = { x=100, y=0, w=100, h=100 }
         },
       },

@@ -5,13 +5,13 @@
   LICENSE file
 
   Layout classes
-  
+
 --]]--------------------------------------------------------------------------
 
 module("venster", package.seeall)
 
 require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 require("venster.utils")
 
@@ -32,6 +32,61 @@ function determineMaxSize(self)
   end
   return result
 end
+
+
+---------------------------------------------------------------------
+--[[
+
+    PositionLayout
+
+
+    place children relative to parent
+
+  Usage:
+
+    PositionLayout
+
+  Example:
+
+    self.layout = venster.PositionLayout
+
+  Remark
+
+    PositionLayout is a singleton and does not contain/use a internal state
+
+--]]
+
+
+mtPositionLayout = {
+  margin  = venster.Rect(0, 0, 0, 0),
+}
+
+function mtPositionLayout:createLayout(parent)
+
+  -- do not change internal state
+
+  return self
+end
+
+
+function mtPositionLayout:layoutContainer(parent)
+  local bounds = parent:getBounds()
+
+  -- reference point
+  local x, y = bounds.left + self.margin.left, bounds.top + self.margin.top
+
+  -- layout uses parent.children collection
+  for _, ch in ipairs(parent.children or {}) do
+    -- layout child
+    ch:setBounds(x + ch.pos.x, y + ch.pos.y, ch.pos.w, ch.pos.h)
+  end
+end
+
+function mtPositionLayout:preferredLayoutSize(parent)
+  -- use parent size
+end
+
+PositionLayout = setmetatable({}, { __index = mtPositionLayout } )
 
 
 ---------------------------------------------------------------------
@@ -87,10 +142,10 @@ end
 
 mtFillLayoutBase = {}
 
-function mtFillLayoutBase:create(parent)
+function mtFillLayoutBase:createLayout(parent)
   self.parent = parent
 
-  -- print("mtFillLayoutBase:create")
+  -- print("mtFillLayoutBase:createLayout")
 
   -- resolve control references
   for idx, name in ipairs(self) do
@@ -169,7 +224,7 @@ setmetatable(mtFillLayoutHorizontal, { __index = mtFillLayoutBase })
 function mtFillLayoutHorizontal:layoutContainer(parent)
   local bounds = parent:getBounds()
 
-  -- print("mtFillLayoutHorizontal:", parent.title,  bounds.left, bounds.top, bounds.right, bounds.bottom)
+  -- print("mtFillLayoutHorizontal:", parent.label,  bounds.left, bounds.top, bounds.right, bounds.bottom)
 
   -- shrink parent dimension by margin
   bounds:shrink(self.margin)
@@ -285,7 +340,7 @@ mtRowLayoutBase =
   center  = false
 }
 
-function mtRowLayoutBase:create(parent)
+function mtRowLayoutBase:createLayout(parent)
   self.parent = parent
 
   -- resolve control references
@@ -651,7 +706,7 @@ mtBorderLayout = {
   verticalSpacing   = 2
 }
 
-function mtBorderLayout:create(parent)
+function mtBorderLayout:createLayout(parent)
   self.parent = parent
 
   -- resolve control references
@@ -860,7 +915,7 @@ mtGridLayout = {
   rowSizes    = { }
 }
 
-function mtGridLayout:create(parent)
+function mtGridLayout:createLayout(parent)
   self.parent = parent
 
   -- resolve control references
@@ -1168,7 +1223,7 @@ function mtSash:create(parent)
   local hwnd = winapi.CreateWindowExW(
       0,
       mtSash.classname,         -- window class name
-      _T(self.title),           -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x, y, w, h,
       hParent,                  -- parent window handle
@@ -1185,8 +1240,8 @@ end
 function Sash(args)
   local self = args or { }
 
-  self.title = self.title or ""
-  self.id    = self.id    or 0
+  self.label = self.label or _T""
+  self.id    = self.id    or "sash"
 
   setmetatable(self, { __index = mtSash } )
 
@@ -1256,7 +1311,7 @@ end
 
 mtSashLayoutBase = {}
 
-function mtSashLayoutBase:create(parent)
+function mtSashLayoutBase:createLayout(parent)
   self.parent = parent
 
   -- resolve control references
@@ -1355,6 +1410,8 @@ setmetatable(mtSashLayoutHorizontal, { __index = mtSashLayoutBase })
 function mtSashLayoutHorizontal:layoutContainer(parent)
   local bounds = parent:getBounds()
 
+  -- print("SashLayoutHorizontal:", bounds.left, bounds.top, bounds.right, bounds.bottom)
+
   -- shrink parent dimension by margin
   bounds:shrink(self.margin)
 
@@ -1430,7 +1487,7 @@ end
 
 mtListViewColumnLayout = {}
 
-function mtListViewColumnLayout:create(parent)
+function mtListViewColumnLayout:createLayout(parent)
   self.parent = parent
 end
 
@@ -1524,17 +1581,17 @@ mtPopupLayout = {
 }
 
 
-function mtPopupLayout:create(parent)
+function mtPopupLayout:createLayout(parent)
   self.parent = parent
 
   -- resolve control references
   for idx, name in ipairs(self) do
+	assert(parent.children, parent.id)
+
     local ch = parent.children[name]
     assert(ch, "unknown name: " .. name)
     self[idx] = ch or name
   end
-
-  -- printtable(self)
 
   return self
 end
@@ -1609,7 +1666,7 @@ function mtTabLayout:preferredLayoutSize(parent)
   -- use parent size
 end
 
-function mtTabLayout:create(parent)
+function mtTabLayout:createLayout(parent)
   self.parent = parent
 
   -- resolve control references

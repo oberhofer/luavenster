@@ -9,39 +9,43 @@
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
+
+local bit = require("bit")
+local bnot = bit.bnot
+local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 --==============================================================
 -- create main window
 
-
 local mainWindow = venster.Window{
-  title = _T("Main window"),
+  label = _T("Main window"),
+  style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Button{
       id = "btnSouth",
-      title = _T"South",
+      label = _T"South",
     },
 
     venster.Button{
       id = "btnWest",
-      title = _T"West",
+      label = _T"West",
     },
 
     venster.Button{
       id = "btnNorth",
-      title = _T"North",
+      label = _T"North",
     },
 
     venster.Button{
       id = "btnEast",
-      title = _T"East",
+      label = _T"East",
     },
 
     venster.Button{
       id = "btnCenter",
-      title = _T"Center",
+      label = _T"Center",
     },
   },
 
@@ -58,7 +62,7 @@ local mainWindow = venster.Window{
     -- add button handlers
     for _, ch in ipairs({ childs.btnSouth, childs.btnWest, childs.btnNorth, childs.btnEast, childs.btnCenter }) do
       ch.OnClicked = function (self)
-        msgbox("Clicked Item " .. self.title, "Info", MB_OK)
+        msgbox("Clicked Item " .. self.label, "Info", MB_OK)
       end
     end
     return nil

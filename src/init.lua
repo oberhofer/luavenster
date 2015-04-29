@@ -10,7 +10,7 @@ module("venster", package.seeall)
 
 require("venster.utils")
 
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 local bit = require("bit")
 local bnot = bit.bnot
@@ -137,45 +137,71 @@ local function internalWndProc(hwnd, msg, wParam, lParam, object, prevproc)
   -- to the current frame window
   widget = widget or activeFrame
 
-
   if (widget) then
     local handler = widget[msg]
 
+    -- print("msg", toASCII(widget.label), MSG_CONSTANTS[msg] or msg, wParam, lParam, hwnd, widget)
+
     if (handler) then
-      local result = handler(widget, wParam, lParam)
+      if ("function" == type(handler)) then
+        local result = handler(widget, wParam, lParam)
 
-      -- print("msg", toASCII(widget.title), MSG_CONSTANTS[msg] or msg, wParam, lParam, msgprocessed, result, (result or 0))
+        -- print("msg", toASCII(widget.label), MSG_CONSTANTS[msg] or msg, wParam, lParam, msgprocessed, result, (result or 0))
 
-      -- returning nil means msg has not been processed
-      if (nil ~= result) then
-        -- print("msg(rets table) ", result, (result or 0))
-        return result
-      else
-        -- route not processed notification messages to the associated window
+        -- returning nil means msg has not been processed
+        if (nil ~= result) then
+          -- print("msg(rets table) ", result, (result or 0))
+          return result
+        end
+      elseif ("table" == type(handler)) then
         if (WM_NOTIFY == msg) then
           local nmh = winapi.NMHDR:attach(lParam)
-
-          local hwndfrom = winapi.WrapWindow(nmh.hwndFrom)
-          local widget = peerToWindow(hwndfrom)
-
---          print("WM_NOTIFY", widget and toASCII(widget.title), (0xFFFFFFFF - nmh.code + 1) )
-
-          if (widget and widget.OnNotify) then
-
-            -- print("call OnNotify")
-            msgprocessed, result = widget:OnNotify(nmh.code, lParam)
+          local nhdlr = handler[nmh.code]
+          if (nhdlr) then
+            msgprocessed, result = nhdlr(widget, nmh)
             if (msgprocessed) then
-              -- print("notify(rets table) ", result, (result or 0))
+              print("notify result ", result, (result or 0))
               return result
             end
           end
         end
       end
     end
+
+--[[
+    -- route not processed notification messages to the associated window
+    if (WM_NOTIFY == msg) then
+      local nmh = winapi.NMHDR:attach(lParam)
+
+      -- print("WM_NOTIFY", widget and toASCII(widget.label), (0xFFFFFFFF - nmh.code + 1) )
+
+      if (widget and widget.OnNotify) then
+
+        -- print("call OnNotify")
+        msgprocessed, result = widget:OnNotify(nmh)
+        if (msgprocessed) then
+          print("notify result ", result, (result or 0))
+          return result
+        end
+      end
+
+      -- do default processing
+      return 0
+    end
+--]]
+
   end
 
   -- nil means call previous window proc
   return nil
+end
+
+
+local function internalErrorFunc(errmsg, hwnd, msg, wParam, lParam)
+  print("------- internalErrorFunc", hwnd, MSG_CONSTANTS[msg] or msg, wParam, lParam)
+  print(errmsg)
+
+  winapi.PostQuitMessage(0)
 end
 
 ---------------------------------------------------------------------
@@ -186,7 +212,8 @@ function registerclass(classname, args)
 
     print("registerclass ", toASCII(classname))
 
-    local WndProc_callback = winapi.WndProc.new(nil, internalWndProc)
+    -- takes object, msgproc, errorfunc
+    local WndProc_callback = winapi.WndProc.new(nil, internalWndProc, internalErrorFunc)
 
     -- check params
     args = args or { }
@@ -248,7 +275,8 @@ local function CreateSubMenu(items)
       if (submenu) then
         winapi.AppendMenuW(hmenu, MF_POPUP, submenu, _T(item.name) )
       else
-        winapi.AppendMenuW(hmenu, bor(MF_ENABLED, MF_STRING), item.id or 0, _T(item.name))
+        local flags = item.flags or bor(MF_ENABLED, MF_STRING)
+        winapi.AppendMenuW(hmenu, flags, item.id or 0, _T(item.name))
       end
     end
 
@@ -267,7 +295,8 @@ local function CreateMenu(items)
     if (submenu) then
       winapi.AppendMenuW(hmenu, MF_POPUP, submenu, _T(item.name) )
     else
-      winapi.AppendMenuW(hmenu, bor(MF_ENABLED, MF_STRING), item.id or 0, _T(item.name))
+      local flags = item.flags or bor(MF_ENABLED, MF_STRING)
+      winapi.AppendMenuW(hmenu, flags, item.id or 0, _T(item.name))
     end
   end
 
@@ -336,6 +365,10 @@ function mtComponent:show(showwnd)
 end
 
 function mtComponent:initChildren()
+
+  print("mtComponent:initChildren", self.id, self.layout)
+  -- print(self.hwnd.handle)
+
   -- init children
   if (self.children) then
     for _, ch in ipairs(self.children) do
@@ -348,7 +381,7 @@ function mtComponent:initChildren()
   if (self.layout) then
     local typ = type(self.layout)
     if ("table" == typ) then
-      self.layout:create(self)
+      self.layout:createLayout(self)
     elseif ("function" == typ) then
       -- wrap function as a layout object
     end
@@ -366,12 +399,25 @@ function mtPanel:setBounds(x,y,w,h,repaint)
   -- layout panel content
   if (self.layout) then
     self.layout:layoutContainer(self)
+  else
+    PositionLayout:layoutContainer(self)
+  end
+end
+
+function mtPanel:setPos(x,y)
+  -- print("mtPanel:setPos", self.id, x,y)
+  self.pos.x = x
+  self.pos.y = y
+  -- layout panel content
+  if (self.layout) then
+    self.layout:layoutContainer(self)
+  else
+    PositionLayout:layoutContainer(self)
   end
 end
 
 function mtPanel:getBounds()
-  local x, y, w, h = getPosSize(self)
-
+  local x, y, w, h = self.pos.x, self.pos.y, self.pos.w, self.pos.h
   local rc = winapi.RECT:new()
   rc.left, rc.top, rc.right, rc.bottom = x, y, x + w, y + h
   return rc
@@ -382,9 +428,7 @@ function mtPanel:isVisible()
 end
 
 function  mtPanel:getSize()
-  local _, _, w, h = getPosSize(self)
-
-  return { width = w, height = h }
+  return { width = self.pos.w, height = self.pos.h }
 end
 
 
@@ -435,14 +479,15 @@ mtWindow[WM_ACTIVATE] = function(self, wParam, lParam)
   return nil
 end
 
-mtWindow[WM_NOTIFY] = function(self, wParam, lParam)
-  local nmh = winapi.NMHDR:attach(lParam)
+--[[
+mtWindow[WM_NOTIFY] = function(self, nmh)
   if (self.OnNotify) then
-    local result = self:OnNotify(nmh.code, lParam)
+    local result = self:OnNotify(nmh)
     -- print("OnNotify gives: ", result)
   end
   return nil
 end
+--]]
 
 mtWindow[WM_DESTROY] = function(self)
   if (self.isrunningmodal) then
@@ -482,9 +527,11 @@ mtWindow[WM_PAINT] = function(self, wParam, lParam)
 end
 
 mtWindow[WM_WINDOWPOSCHANGED] = function(self, wParam, lParam)
-  -- print("WM_WINDOWPOSCHANGED", self.class, toASCII(self.title))
+  -- print("WM_WINDOWPOSCHANGED", self.class, toASCII(self.label))
   if (self.layout) then
     self.layout:layoutContainer(self)
+  else
+    PositionLayout:layoutContainer(self)
   end
   return nil
 end
@@ -494,7 +541,7 @@ end
 --
 function mtWindow:msgbox(text, title, buttons)
   buttons = buttons or MB_OK
-  title = title or self.title
+  title = title or self.label
   return winapi.MessageBoxW(self.hwnd, _T(text), _T(title), buttons)
 end
 
@@ -529,14 +576,16 @@ function mtWindow:getSize()
 end
 
 function mtWindow:setBounds(x,y,w,h,repaint)
+  -- print("setBounds", self.id, x,y,w,h);
   if (nil == repaint) then
     repaint = TRUE
   end
   winapi.MoveWindow(self.hwnd, x, y, w, h, repaint)
 end
 
-function mtWindow:setLocation(loc)
-  winapi.SetWindowPos(self.hwnd, 0, loc.x, loc.y, 0, 0, SWP_NOSIZE)
+function mtWindow:setPos(x, y)
+  -- print("setPos", self.id, x, y);
+  winapi.SetWindowPos(self.hwnd, 0, x, y, 0, 0, SWP_NOSIZE)
 end
 
 function mtWindow:tofront()
@@ -546,6 +595,8 @@ end
 function mtWindow:update()
   if (self.layout) then
     self.layout:layoutContainer(self)
+  else
+    PositionLayout:layoutContainer(self)
   end
   winapi.UpdateWindow(self.hwnd)
 end
@@ -611,7 +662,7 @@ function mtWindow:endmodal(result)
 end
 
 function mtWindow:runmodal(parent, ...)
-  print("-> mtWindow:runmodal", self and toASCII(self.title))
+  print("-> mtWindow:runmodal", self and toASCII(self.label))
 
   self.modal_parent = parent
 
@@ -631,7 +682,7 @@ function mtWindow:runmodal(parent, ...)
   end
   self:show()
 
-  -- print("set active frame", toASCII(self.title))
+  -- print("set active frame", toASCII(self.label))
   local prevFrame = activeFrame
   activeFrame = self
 
@@ -660,7 +711,7 @@ function mtWindow:runmodal(parent, ...)
 
   activeFrame = prevFrame
 
-  print("<- mtWindow:runmodal", self and toASCII(self.title), self.result, self.hwnd)
+  print("<- mtWindow:runmodal", self and toASCII(self.label), self.result, self.hwnd)
 
   -- destroy dialog
   -- winapi.DestroyWindow(self.hwnd);
@@ -672,7 +723,7 @@ function mtWindow:runmodal(parent, ...)
   --     self.menu.hmenu = nil
   -- end
 
-  -- print("restore active frame", toASCII(prevFrame.title))
+  -- print("restore active frame", toASCII(prevFrame.label))
   activeFrame = prevFrame
 
   -- return result
@@ -681,7 +732,7 @@ end
 
 
 function mtWindow:create(parent)
-  print("mtWindow:create ", toASCII(self.title), parent)
+  print("mtWindow:create ", toASCII(self.label), parent)
 
   self.parent = parent
 
@@ -692,7 +743,7 @@ function mtWindow:create(parent)
     registerclass(self.classname, self)
   end
 
-  -- print("after registerclass", toASCII(self.title))
+  -- print("after registerclass", toASCII(self.label))
 
   local x, y, w, h = getPosSize(self)
   local style   = self.style or WS_VISIBLE
@@ -714,7 +765,7 @@ function mtWindow:create(parent)
   local hwnd = winapi.CreateWindowExW(
       exstyle,
       self.classname,           -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       parenthwnd or 0,          -- parent window handle
@@ -734,10 +785,10 @@ function Window(args, mt)
   if ("string"==type(args)) then
     self = {  }
   else
-    self = args or { title=_T"" }
+    self = args or { label=_T"" }
   end
 
-  self.title = self.title or _T""
+  self.label = self.label or _T""
 
   setmetatable(self, { __index = mt or mtWindow } )
 
@@ -789,7 +840,7 @@ function mtButton:recalcSize()
 end
 
 function mtButton:getPreferredSize()
-  -- print("mtButton:getPreferredSize", toASCII(self.title))
+  -- print("mtButton:getPreferredSize", toASCII(self.label))
 
   -- if we have a layout manager, use it to calculate
   -- the preferredSize.
@@ -814,7 +865,7 @@ function mtButton:create(parent)
   local hwnd = winapi.CreateWindowExW(
       0,
       _T("BUTTON"),             -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -833,6 +884,12 @@ end
 function Button(args)
   return Window(args, mtButton)
 end
+
+function GroupBox(args)
+  args.style = bor(args.style or 0, BS_GROUPBOX)
+  return Button(args, mtButton)
+end
+
 
 ---------------------------------------------------------------------
 -- Label
@@ -883,10 +940,12 @@ function mtLabel:create(parent)
   local hParent = self.parent.hwnd     -- parent window handle
   local style   = bor(WS_CHILD, WS_VISIBLE, self.style or 0)
 
+  print("create label", hParent)
+
   local hwnd = winapi.CreateWindowExW(
       0,
       _T("Static"),             -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -926,7 +985,7 @@ function mtEdit:create(parent)
   local hwnd = winapi.CreateWindowExW(
       0,
       _T("EDIT"),               -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1165,7 +1224,7 @@ function mtListView:create(parent)
   local hwnd = winapi.CreateWindowExW(
       0,
       WC_LISTVIEWW,             -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1250,6 +1309,16 @@ mtTreeView.NumChildren = function(self, item)
   return tvi.cChildren;
 end
 
+mtTreeView.GetItem = function(self, hitem, mask)
+  mask = mask or bor(TVIF_PARAM, TVIF_TEXT)
+
+  local tvi  = winapi.TVITEMW:new()
+  tvi.hItem = hitem;
+  tvi.mask  = mask;
+  winapi.SendMessageW(self.hwnd, TVM_GETITEMW, 0, tvi)
+
+  return tvi
+end
 
 mtTreeView.GetNextItem  = function(self, item, code)
   return winapi.SendMessageW(self.hwnd, TVM_GETNEXTITEM, code, item)
@@ -1293,6 +1362,17 @@ mtTreeView.SelectItem = function(self, item, flags)
 end
 mtTreeView.DeleteItem = function(self, item)
   return winapi.SendMessageW(self.hwnd, TVM_DELETEITEM, item)
+end
+
+mtTreeView.Hittest = function(self)
+  local tvh = winapi.TVHITTESTINFO:new()
+  if (winapi.GetCursorPos(tvh.pt) and
+      winapi.ScreenToClient(self.hwnd.handle, tvh.pt)) then
+    if (winapi.SendMessageW(self.hwnd.handle, TVM_HITTEST, 0, tvh)) then
+      return tvh
+    end
+  end
+  return nil -- , GetLastError
 end
 
 
@@ -1365,7 +1445,7 @@ function mtTreeView:create(parent)
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
       WC_TREEVIEWW,             -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1401,7 +1481,7 @@ function mtTabControl:create(parent)
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
       WC_TABCONTROLW,           -- window class name
-      self.title .. "\0\0",           -- window caption
+      self.label .. "\0\0",           -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1414,7 +1494,7 @@ function mtTabControl:create(parent)
   --
   assert(self.children, string.format("tabcontrol '%s' should contain childrens", self.id))
   for _, ch in ipairs(self.children) do
-    self:InsertItem(ch.title)
+    self:InsertItem(ch.label)
   end
 
   -- init children and layout
@@ -1430,6 +1510,8 @@ function mtTabControl:setBounds(x,y,w,h,repaint)
   -- layout tab content
   if (self.layout) then
     self.layout:layoutContainer(self)
+  else
+    PositionLayout:layoutContainer(self)
   end
 end
 
@@ -1463,8 +1545,8 @@ function mtTabControl:InsertItem(text, pos)
   return winapi.SendMessageW(self.hwnd, TCM_INSERTITEMW, pos, tci)
 end
 
-function mtTabControl:OnNotify(code, lParam)
-  if (TCN_SELCHANGE == code) then
+function mtTabControl:OnNotify(nmh)
+  if (TCN_SELCHANGE == nmh.code) then
     -- by default use TabLayout instance to select correct child
     if (self.layout and self.layout.setActive) then
       self.layout:setActive(self:GetCurSel() + 1)
@@ -1478,6 +1560,101 @@ function TabControl(args)
   args.layout = args.layout or venster.TabLayout()
 
   return Window(args, mtTabControl)
+end
+
+--------------------------------------------------------------------
+-- Dialog
+--
+
+mtDialog = setmetatable({ class="Dialog" }, { __index =  mtWindow })
+
+
+function mtDialog:create(parent)
+  self.parent = parent
+
+  local hParent = 0
+  if (self.parent) then
+	hParent = self.parent.hwnd     -- parent window handle
+  end
+
+  local x, y, w, h = getPosSize(self)
+  local style   = bor(0, self.style or 0)
+
+  -- select font
+  --   if (DS_SETFONT) {
+  --     use font specified in template
+  --   } else if (DS_FIXEDSYS) {
+  --     use GetStockFont(SYSTEM_FIXED_FONT);
+  --   } else {
+  --     use GetStockFont(SYSTEM_FONT);
+  --   }
+
+  -- cx = XDLU2Pix(DialogTemplate.cx);
+  -- cy = YDLU2Pix(DialogTemplate.cy);
+
+  -- convert to nonclient area
+  -- RECT rcAdjust = { 0, 0, cxDlg, cyDlg };
+  -- AdjustWindowRectEx(&rcAdjust, dwStyle, hmenu != NULL, dwExStyle);
+  -- int cxDlg = rcAdjust.right - rcAdjust.left;
+  -- int cyDlg = rcAdjust.bottom - rcAdjust.top;
+
+  -- if ~DS_ABSALIGN
+  --    POINT pt = { XDLU2Pix(DialogTemplate.x),
+  --                 YDLU2Pix(DialogTemplate.y) };
+  --   ClientToScreen(hwndParent, &pt);
+
+
+
+  local wasVisible = (bit.band(style, WS_VISIBLE) > 0)
+  style   = band(style, bnot(WS_VISIBLE))
+
+  -- remove per class style bits
+  style   = band(style, 0xFFFF0000)
+
+  print("WC_DIALOG", WC_DIALOG)
+
+  local hwnd = winapi.CreateWindowExW(
+      self.exstyle or 0,
+      WC_DIALOG,                -- window class name
+      self.label .. "\0\0",     -- window caption
+      style,                    -- window style
+      x,y,w,h,
+      hParent,
+      0,                        -- window menu handle
+      moduleHandle,             -- program instance handle
+      0)                        -- creation parameters
+  winapi.Assert(hwnd)
+  print("hwnd", hwnd)
+  setWindowPeer(hwnd, self)
+
+  -- set dialog procedure
+  -- winapi.SetWindowLongPtr(hwnd, DWLP_DLGPROC, winapi.GetDefDlgProc());
+
+  -- set window font
+  -- SetWindowFont(hdlg, hf, FALSE);
+
+  -- init children and layout
+  self:initChildren()
+
+  -- init helpids/fonts of childs
+  -- SetWindowContextHelpId(hwndChild, ItemTemplate.dwHelpID);
+  -- SetWindowFont(hwndChild, hf, FALSE);
+
+  -- The default focus is the first item that is a valid tab-stop.
+  -- local hwndDefaultFocus = GetNextDlgTabItem(hdlg, NULL, FALSE);
+  -- if (SendMessage(hdlg, WM_INITDIALOG, hwndDefaultFocus, lParam)) {
+  --    SetDialogFocus(hwndDefaultFocus);
+  -- }
+
+  -- if (fWasVisible) then
+  --  self:show()
+  -- end
+
+  return self
+end
+
+function Dialog(args)
+  return Window(args, mtDialog)
 end
 
 --------------------------------------------------------------------
@@ -1546,7 +1723,7 @@ function mtPocketPCFrame:ReleaseMenuKeys()
 end
 
 function mtPocketPCFrame:create(parent)
-  print("mtPocketPCFrame:create ", toASCII(self.title))
+  print("mtPocketPCFrame:create ", toASCII(self.label))
 
   self.ctrlid = idGenerator:createid()
   self.classname = self.classname or _T( "guiwin_" .. self.ctrlid )
@@ -1569,7 +1746,7 @@ function mtPocketPCFrame:create(parent)
   local hwnd = winapi.CreateWindowExW(
       exstyle,
       self.classname,           -- window class name
-      self.title .. "\0\0",     -- window caption
+      self.label .. "\0\0",     -- window caption
       style,                    -- window style
       x,y,w,h,
       parenthwnd or 0,          -- parent window handle
@@ -1657,7 +1834,7 @@ end
 mtPocketPCFrame[WM_ACTIVATE] = function(self, wParam, lParam)
 --[[
   if (WA_INACTIVE ~= LOWORD(wParam)) then
-    print("mtPocketPCFrame_WM_ACTIVATE", toASCII(self.title))
+    print("mtPocketPCFrame_WM_ACTIVATE", toASCII(self.label))
     winapi.SHFullScreen( self.hwnd, bor(SHFS_SHOWTASKBAR, SHFS_SHOWSIPBUTTON))
   end
 --]]
@@ -1696,6 +1873,15 @@ else
 end
 
 require("venster.layout")
+require("venster.winres")
 
 
+-- error handling
 
+--[[
+function printMsgProcError(errormsg, hwnd, Msg, wParam, lParam)
+	print("Error in WndProc", hwnd, MSG_CONSTANTS[msg] or msg, wParam, lParam)
+	print(errormsg)
+	print(debug.traceback())
+end
+--]]

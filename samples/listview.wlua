@@ -9,7 +9,7 @@
 --]]--------------------------------------------------------------------------
 
 local venster = require("venster")
-local winapi = require("winapi")
+local winapi = require("luawinapi")
 
 local bit = require("bit")
 local bnot = bit.bnot
@@ -20,7 +20,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  title = _T("Main window"),
+  label = _T("Main window"),
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   OnClose = function(self)
@@ -31,7 +31,7 @@ local mainWindow = venster.Window{
   children = {
     venster.ListView{
       id = "listView",
-      title  = _T"ListView",
+      label  = _T"ListView",
       style  = bor(LVS_REPORT,LVS_SHOWSELALWAYS,LVS_SINGLESEL,LVS_ALIGNTOP),
       exstyle= bor(LVS_EX_FULLROWSELECT),
       pos    = { x=0, y=0, w=200, h=200 },
@@ -50,12 +50,6 @@ local mainWindow = venster.Window{
   },
 
   OnCreate = function(self)
-    -- local root = self.children.treeView:AddItem(0, 0, { text = "hello" } )
-    -- local subitem = self.children.treeView:AddItem(root, 0, { text = "subitem" } )
-
---    self.children.listView:EnableGroups(true)
-
---    print(">>", self.children.listView:InsertGroup({ name=_T"group1", id=1 }))
 
     self.children.listView:AddRows(
       {
@@ -64,10 +58,7 @@ local mainWindow = venster.Window{
         { _T"3", _T"child3" },
         { _T"4", _T"child4" }
       }
---      , 1
     )
-
---    self.children.listView:InsertGroup({ name=_T"group2", id=2 })
 
     self.children.listView:AddRows(
       {
@@ -76,7 +67,6 @@ local mainWindow = venster.Window{
         { _T"7", _T"child3" },
         { _T"8", _T"child4" }
       }
---      , 2
     )
 
     text = self.children.listView:GetItemText(1,1)
