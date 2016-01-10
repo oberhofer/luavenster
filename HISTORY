@@ -6,3 +6,8 @@
 
 * fixed rockspec (removed obsolete source file reference)
 
+1.2.0
+
+* depend on luawinapi version 1.2.0-1
+* changed dependency from bit to bit32
+* tested on Lua 5.1, 5.2 and 5.3

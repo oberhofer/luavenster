@@ -12,7 +12,7 @@ require("venster.utils")
 
 local winapi = require("luawinapi")
 
-local bit = require("bit")
+local bit = require("bit32")
 local bnot = bit.bnot
 local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
