@@ -168,27 +168,37 @@ local function internalWndProc(hwnd, msg, wParam, lParam, object, prevproc)
       end
     end
 
---[[
     -- route not processed notification messages to the associated window
     if (WM_NOTIFY == msg) then
       local nmh = winapi.NMHDR:attach(lParam)
 
+      local hwndfrom = winapi.WrapWindow(nmh.hwndFrom)
+      local widget = peerToWindow(hwndfrom)
+    
+      print(MSG_CONSTANTS[msg] or msg, toASCII(widget.label), handler)
+      
       -- print("WM_NOTIFY", widget and toASCII(widget.label), (0xFFFFFFFF - nmh.code + 1) )
 
-      if (widget and widget.OnNotify) then
-
-        -- print("call OnNotify")
-        msgprocessed, result = widget:OnNotify(nmh)
-        if (msgprocessed) then
-          print("notify result ", result, (result or 0))
-          return result
+      if (widget) then
+        local handler = widget[msg]
+        if ("function" == type(handler)) then
+          local result = handler(widget, wParam, lParam)
+          if (nil ~= result) then
+            -- print("msg(rets table) ", result, (result or 0))
+            return result
+          end
+        elseif ("table" == type(handler)) then
+          local nhdlr = handler[nmh.code]
+          if (nhdlr) then
+            msgprocessed, result = nhdlr(widget, nmh)
+            if (msgprocessed) then
+              print("notify result ", result, (result or 0))
+              return result
+            end
+          end
         end
       end
-
-      -- do default processing
-      return 0
     end
---]]
 
   end
 
@@ -478,16 +488,6 @@ mtWindow[WM_ACTIVATE] = function(self, wParam, lParam)
   end
   return nil
 end
-
---[[
-mtWindow[WM_NOTIFY] = function(self, nmh)
-  if (self.OnNotify) then
-    local result = self:OnNotify(nmh)
-    -- print("OnNotify gives: ", result)
-  end
-  return nil
-end
---]]
 
 mtWindow[WM_DESTROY] = function(self)
   if (self.isrunningmodal) then
@@ -1545,15 +1545,16 @@ function mtTabControl:InsertItem(text, pos)
   return winapi.SendMessageW(self.hwnd, TCM_INSERTITEMW, pos, tci)
 end
 
-function mtTabControl:OnNotify(nmh)
-  if (TCN_SELCHANGE == nmh.code) then
-    -- by default use TabLayout instance to select correct child
-    if (self.layout and self.layout.setActive) then
-      self.layout:setActive(self:GetCurSel() + 1)
-    end
+-- notify handlers
+mtTabControl[WM_NOTIFY] = {
+  [TCN_SELCHANGE] = function(self, nmh)
+      -- by default use TabLayout instance to select correct child
+      if (self.layout and self.layout.setActive) then
+        self.layout:setActive(self:GetCurSel() + 1)
+      end
+    return nil
   end
-  return nil
-end
+}
 
 function TabControl(args)
   -- by default use TabLayout instance
@@ -1611,7 +1612,7 @@ function mtDialog:create(parent)
   -- remove per class style bits
   style   = band(style, 0xFFFF0000)
 
-  print("WC_DIALOG", WC_DIALOG)
+  -- print("WC_DIALOG", WC_DIALOG)
 
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
@@ -1624,11 +1625,11 @@ function mtDialog:create(parent)
       moduleHandle,             -- program instance handle
       0)                        -- creation parameters
   winapi.Assert(hwnd)
-  print("hwnd", hwnd)
+  -- print("hwnd", hwnd)
   setWindowPeer(hwnd, self)
 
   -- set dialog procedure
-  -- winapi.SetWindowLongPtr(hwnd, DWLP_DLGPROC, winapi.GetDefDlgProc());
+  winapi.SetWindowLongPtr(hwnd, DWLP_DLGPROC, winapi.GetDefDlgProc());
 
   -- set window font
   -- SetWindowFont(hdlg, hf, FALSE);
