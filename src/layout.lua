@@ -1079,8 +1079,8 @@ end
 function mtGridLayout:preferredLayoutSize(parent)
   local numComponents = #self
 
-  local numRows = self.rows
-  local numCols = self.columns
+  local numRows = #self.columnSizes
+  local numCols = #self.rowSizes
 
   if (numRows) then
     numCols = (numComponents + numRows - 1) / numRows
