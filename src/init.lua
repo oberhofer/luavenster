@@ -174,9 +174,8 @@ local function internalWndProc(hwnd, msg, wParam, lParam, object, prevproc)
 
       local hwndfrom = winapi.WrapWindow(nmh.hwndFrom)
       local widget = peerToWindow(hwndfrom)
-    
-      print(MSG_CONSTANTS[msg] or msg, toASCII(widget.label), handler)
-      
+
+      -- print(MSG_CONSTANTS[msg] or msg, widget and toASCII(widget.label))
       -- print("WM_NOTIFY", widget and toASCII(widget.label), (0xFFFFFFFF - nmh.code + 1) )
 
       if (widget) then
@@ -249,6 +248,15 @@ function registerclass(classname, args)
     -- store atom and callback
     windowClasses[classname] = { atom, WndProc_callback }
   end
+end
+
+---------------------------------------------------------------------
+-- Icon
+--
+
+function Icon(path)
+  local icon = ValidHandle(winapi.LoadImageW(NULL, path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE))
+  return icon
 end
 
 ---------------------------------------------------------------------
@@ -327,6 +335,19 @@ function mtMenu:contextMenu(parent, offset)
   winapi.TrackPopupMenuEx(winapi.GetSubMenu(self.hmenu, 0), 0, rc.left + offset.x, rc.top + offset.y, parent.hwnd.handle, 0)
 end
 
+
+function mtMenu:TrackPopupMenuEx(fuFlags, x, y, hwnd, lptpm)
+  winapi.TrackPopupMenuEx(winapi.GetSubMenu(self.hmenu, 0), 0, x, y, hwnd.handle, lptpm)
+end
+
+function mtMenu:Track(hwnd, fuFlags)
+  fuFlags = fuFlags or TPM_LEFTBUTTON
+
+  local pt = winapi.POINT:new()
+  winapi.GetCursorPos(pt)
+
+  return self:TrackPopupMenuEx(fuFlags, pt.x, pt.y, hwnd)
+end
 
 function Menu(items)
   local self = setmetatable( { items = items }, { __index = mtMenu } )
@@ -625,6 +646,10 @@ function mtWindow:setText(text)
   winapi.SendMessageW(self.hwnd, WM_SETTEXT, 0, text)
 end
 
+function mtWindow:setIcon(which, icon)
+  winapi.SendMessageW(self.hwnd, WM_SETICON, which, icon)
+end
+
 function mtWindow:getText()
   local textLength = winapi.SendMessageW(self.hwnd, WM_GETTEXTLENGTH) + 1
   local buffer   = string.rep("\0\0", textLength)
@@ -794,6 +819,136 @@ function Window(args, mt)
 
   return self
 end
+
+---------------------------------------------------------------------
+-- TrayIconHost
+--
+
+local WM_USER_TASKBAR = WM_USER + 1
+
+-- this message is send when explorer restarts after a crash:
+local WM_TASKBAR_CREATED = winapi.RegisterWindowMessageW(_T("TaskbarCreated"))
+
+mtTrayIconHost = setmetatable({ class="TrayIconHost" }, { __index = mtWindow })
+
+function mtTrayIconHost:OnCreate(createStruct)
+  self:AddTrayIcon()
+end
+
+function mtTrayIconHost:OnDestroy()
+  self:RemoveTrayIcon()
+end
+
+function mtTrayIconHost:AddTrayIcon()
+  local ntfIconData = winapi.NOTIFYICONDATAW:new()
+  ntfIconData.cbSize = #ntfIconData
+
+  ntfIconData.hWnd = self.hwnd.handle
+  ntfIconData.uID = self.ctrlid
+  ntfIconData.uFlags = bor(NIF_ICON, NIF_MESSAGE, NIF_TIP)
+  ntfIconData.hIcon = self.trayicon
+  ntfIconData.uCallbackMessage = WM_USER_TASKBAR
+  ntfIconData.szTip = self.traytip or self.label
+  winapi.Shell_NotifyIconW(NIM_ADD, ntfIconData)
+
+  -- todo check that shell >= 5.0 is present
+  ntfIconData.uVersion = NOTIFYICON_VERSION
+
+  winapi.Shell_NotifyIconW(NIM_SETVERSION, ntfIconData)
+end
+
+function mtTrayIconHost:RemoveTrayIcon()
+  local ntfIconData = winapi.NOTIFYICONDATAW:new()
+  ntfIconData.cbSize = #ntfIconData
+  ntfIconData.hWnd = self.hwnd.handle
+  ntfIconData.uID = self.ctrlid
+  winapi.Shell_NotifyIconW(NIM_DELETE, ntfIconData)
+end
+
+mtTrayIconHost[WM_USER_TASKBAR] = function(self, wParam, lParam)
+
+  -- the shell icon will send notification messages to the hidden window
+  -- the message is the one given by the uCallbackMessage field when the icon was
+  -- added to the tray.
+  -- the lParam contains the original msg (WM_MOUSEMOVE etc). we intercept
+  -- it here, and turn it into a normal msg and use normal wtl processing to handle the msg
+
+  return winapi.SendMessageW(self.hwnd, lParam, 0, 0)
+end
+
+mtTrayIconHost[WM_TASKBAR_CREATED] = function(self, wParam, lParam)
+  -- after an Explorer crash, this event will be received
+  -- when explorer restarts. Then we re-add the tray icon...
+  self:AddTrayIcon()
+end
+
+function mtTrayIconHost:TrackPopupMenu()
+  -- To display a context menu for a notification icon, the
+  -- current window must be the foreground window before the
+  -- application calls TrackPopupMenu or TrackPopupMenuEx. Otherwise,
+  -- the menu will not disappear when the user clicks outside of the
+  -- menu or the window that created the menu (if it is visible).
+  winapi.SetForegroundWindow(self.hwnd)
+
+  if (self.buddyform and self.buddyform.OnTrayMenu) then
+    self.buddyform:OnTrayMenu()
+  end
+
+  -- See MS KB article Q135788
+  winapi.PostMessageW(self.hwnd, WM_NULL)
+end
+
+mtTrayIconHost[WM_CONTEXTMENU] = function(self, wParam, lParam)
+  self:TrackPopupMenu()
+end
+
+mtTrayIconHost[WM_LBUTTONDBLCLK] = function(self, wParam, lParam)
+
+	if (self.buddyform and self.buddyform.hwnd) then
+		winapi.ShowWindow(self.buddyform.hwnd, SW_RESTORE)
+	end
+
+end
+
+-- mtTrayIconHost[WM_RBUTTONUP] = function(self, wParam, lParam)
+--  self:TrackPopupMenu(ptMouse)
+-- end
+
+--[[
+    def OnExitCmd(self, event):
+        self.DestroyWindow()
+        PostQuitMessage(0)
+
+    cmd_handler(form.ID_EXIT)(OnExitCmd)
+
+    def OnLeftButtonDoubleClick(self, event):
+        pass
+
+    msg_handler(WM_LBUTTONDBLCLK)(OnLeftButtonDoubleClick)
+
+    def OnOpenCmd(self, event):
+        pass
+
+    cmd_handler(form.ID_OPEN)(OnOpenCmd)
+
+    def OnCloseCmd(self, event):
+        pass
+
+    cmd_handler(form.ID_CLOSE)(OnCloseCmd)
+--]]
+
+function TrayIconHost(buddyform, icon)
+
+  args = {
+    buddyform = buddyform,
+    style = WS_OVERLAPPEDWINDOW,
+    trayicon = icon,
+    traymenu = traymenu,
+    traytip = nil,
+  }
+  return Window(args, mtTrayIconHost)
+end
+
 
 ---------------------------------------------------------------------
 -- Button
