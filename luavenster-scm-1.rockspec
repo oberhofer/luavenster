@@ -19,7 +19,7 @@ description = {
 
 dependencies = {
    "lua >= 5.1",
-   "luawinapi ~> 1.3",
+   "luawinapi ~> 1.4",
    "bit32"
 }
 
