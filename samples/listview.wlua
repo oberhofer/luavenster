@@ -20,7 +20,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   OnClose = function(self)
@@ -31,14 +31,14 @@ local mainWindow = venster.Window{
   children = {
     venster.ListView{
       id = "listView",
-      label  = _T"ListView",
+      label  = "ListView",
       style  = bor(LVS_REPORT,LVS_SHOWSELALWAYS,LVS_SINGLESEL,LVS_ALIGNTOP),
       exstyle= bor(LVS_EX_FULLROWSELECT),
       pos    = { x=0, y=0, w=200, h=200 },
       columns= {
-        { text=_T"Number", percent=0.15 },
-        { text=_T"article",  percent=0.65 },
-        { text=_T"price",  percent=0.20 }
+        { text="Number", percent=0.15 },
+        { text="article",  percent=0.65 },
+        { text="price",  percent=0.20 }
       },
       layout = venster.ListViewColumnLayout(),
     }
@@ -53,32 +53,32 @@ local mainWindow = venster.Window{
 
     self.children.listView:AddRows(
       {
-        { _T"1", _T"child1" },
-        { _T"2", _T"child2" },
-        { _T"3", _T"child3" },
-        { _T"4", _T"child4" }
+        { "1", "child1" },
+        { "2", "child2" },
+        { "3", "child3" },
+        { "4", "child4" }
       }
     )
 
     self.children.listView:AddRows(
       {
-        { _T"5", _T"child1" },
-        { _T"6", _T"child2" },
-        { _T"7", _T"child3" },
-        { _T"8", _T"child4" }
+        { "5", "child1" },
+        { "6", "child2" },
+        { "7", "child3" },
+        { "8", "child4" }
       }
     )
 
     text = self.children.listView:GetItemText(1,1)
 
-    print(#text, toASCII(text))
+    print(#text, text)
 
 
     row = self.children.listView:GetRow(2, {1, 2})
     print(#row)
 
     for idx, item in ipairs(row) do
-      print(idx, toASCII(item))
+      print(idx, item)
     end
 
   end,

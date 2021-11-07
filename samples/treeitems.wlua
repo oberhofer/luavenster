@@ -26,32 +26,32 @@ ID_ADD_RASPBERRIES  = 1002
 
 
 local mainWindow = venster.Window{
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_OVERLAPPEDWINDOW),
 
   children = {
     venster.TreeView{
       id = "treeView",
-      label  = _T"Tree",
+      label  = "Tree",
       style  = bor(WS_CHILD, WS_VISIBLE, TVS_HASLINES, TVS_LINESATROOT, TVS_HASBUTTONS),
       pos    = { x=0, y=0, w=100, h=100 }
     },
 
     venster.Panel{
       id = "panel",
-      label  = _T"panel",
+      label  = "panel",
       pos    = { x=100, y=0, w=100, h=100 },
 
       children = {
         venster.Edit{
           id = "lblTop",
-          label  = _T"",
+          label  = "",
           pos    = { x=0, y=0, w=100, h=100 }
         },
 
         venster.Edit{
           id = "lblBottom",
-          label  = _T"",
+          label  = "",
           pos    = { x=100, y=0, w=100, h=100 }
         },
       },
@@ -76,10 +76,10 @@ local mainWindow = venster.Window{
     local tv = self.children.treeView
 
     tv:setRedraw(FALSE)
-    local root = tv:AddItem(0, 0, { text = _T("fruits") } )
+    local root = tv:AddItem(0, 0, { text = "fruits" } )
 
     local function insertnodes(collection)
-      local subitem = tv:AddItem(root, 0, { text = _T(collection), param = _T(collection) } )
+      local subitem = tv:AddItem(root, 0, { text = collection, param = collection } )
     end
 
     local collections = { "apples", "pears", "oranges", "lemons", "strawberries", "raspberries", "pineapples" }
@@ -100,7 +100,7 @@ local mainWindow = venster.Window{
 		local nmtv = winapi.NMTREEVIEWW:attach(nmh)
 
 		-- set text of selected item in lblTop
-		self.children.panel.children.lblTop:setText(nmtv.itemNew.lParam.value or _T(""))
+		self.children.panel.children.lblTop:setText(nmtv.itemNew.lParam.value or "")
 		return nil
 	end,
     [TVN_DELETEITEMW] = function(self, nmh)
@@ -158,9 +158,9 @@ local mainWindow = venster.Window{
 	OnCommand = function(self, command, isAccel)
 		-- print("OnCommand", command)
 		if (ID_ADD_BANANAS == command) then
-			self:AddNode(_T"bananas")
+			self:AddNode("bananas")
 		elseif (ID_ADD_RASPBERRIES == command) then
-			self:AddNode(_T"raspberries")
+			self:AddNode("raspberries")
 		end
 		return 0
 	end,

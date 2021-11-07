@@ -83,7 +83,7 @@ local wndcontrols = P{"controls";
 
   resclass = Cg(C(identifier), "tag");
 
-  stringlit_tounicode = stringlit / _T;
+  stringlit_tounicode = stringlit;
 
   label = Cg(V"stringlit_tounicode" * WS * P",", "label");
 
@@ -160,7 +160,7 @@ function FromWinResource(dlgres)
 
 	local result = venster.Dialog{
     id = "Dialog_",  -- .. tostring(idGenerator:createid()),
-    label = _T"Dialog",
+    label = "Dialog",
 		pos    = { x=0, y=0, w=100, h=100 },
 
     -- children = controls

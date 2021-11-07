@@ -48,7 +48,7 @@ end
 
 local mainWindow = venster.Window{
 
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_OVERLAPPEDWINDOW, WS_VISIBLE, WS_SYSMENU),
 
   hIcon = winapi.LoadIconW(nil, IDI_INFORMATION),
@@ -78,7 +78,7 @@ local mainWindow = venster.Window{
 	nid.hWnd = self.hwnd
 	nid.uCallbackMessage = WM_ICONNOTIFY
 	nid.hIcon = self.hTrayIcon;
-	nid.szTip = _T("Tooltip text")
+	nid.szTip = "Tooltip text"
 
 	-- print(nid)
 
@@ -89,7 +89,7 @@ local mainWindow = venster.Window{
 
   ChangeIcon = function(self, nID)
 	-- hTrayIcon = AfxGetApp()->LoadIcon(nID);
-	self.hTrayIcon = venster.Icon(_T("logo.ico"))
+	self.hTrayIcon = venster.Icon("logo.ico")
 	self:NotifyIcon(NIM_MODIFY)
   end,
 
@@ -103,14 +103,14 @@ local mainWindow = venster.Window{
   children = {
     venster.ListView{
       id = "listView",
-      label  = _T"ListView",
+      label  = "ListView",
       style  = bor(LVS_REPORT,LVS_SHOWSELALWAYS,LVS_SINGLESEL,LVS_ALIGNTOP),
       exstyle= bor(LVS_EX_FULLROWSELECT),
       pos    = { x=0, y=0, w=400, h=200 },
       columns= {
-        { text=_T"Name", percent=0.50 },
-        { text=_T"Address",  percent=0.30 },
-        { text=_T"State",  percent=0.20 },
+        { text="Name", percent=0.50 },
+        { text="Address",  percent=0.30 },
+        { text="State",  percent=0.20 },
       },
       layout = venster.ListViewColumnLayout(),
     }
@@ -144,7 +144,7 @@ local mainWindow = venster.Window{
 	self:setIcon(ICON_SMALL, self.hIcon)
 	self:setIcon(ICON_LARGE, self.hIcon)
 
-	self.hTrayIcon = venster.Icon(_T("logo.ico"))
+	self.hTrayIcon = venster.Icon("logo.ico")
 	-- self:NotifyIcon(NIM_ADD)
 
 	self:setIcon(ICON_SMALL, self.hTrayIcon)
@@ -152,40 +152,40 @@ local mainWindow = venster.Window{
 
     self.children.listView:EnableGroups(true)
 
-    print(">>", self.children.listView:InsertGroup({ name=_T"Available", id=1 }))
+    print(">>", self.children.listView:InsertGroup({ name="Available", id=1 }))
 
 --[[
 	local devs = getDevices()
 	for _, dev in ipairs(devs) do
 		print(dev[1], dev[2])
 
-		self.children.listView:AddRow( nil, { _T(dev[2]), _T(dev[1]) }, 1 )
+		self.children.listView:AddRow( nil, { dev[2], dev[1] }, 1 )
 	end
 --]]
 
 
-    self.children.listView:InsertGroup({ name=_T"Running", id=2 })
+    self.children.listView:InsertGroup({ name="Running", id=2 })
 
     self.children.listView:AddRows(
       {
-        { _T"5", _T"child1" },
-        { _T"6", _T"child2" },
-        { _T"7", _T"child3" },
-        { _T"8", _T"child4" }
+        { "5", "child1" },
+        { "6", "child2" },
+        { "7", "child3" },
+        { "8", "child4" }
       }
       , 2
     )
 
     text = self.children.listView:GetItemText(1,1)
 
-    print(#text, toASCII(text))
+    print(#text, text)
 
 
     row = self.children.listView:GetRow(2, {1, 2})
     print(#row)
 
     for idx, item in ipairs(row) do
-      print(idx, toASCII(item))
+      print(idx, item)
     end
 
   end,
@@ -194,7 +194,7 @@ local mainWindow = venster.Window{
 
 --==============================================================
 
-local trayIconHost = venster.TrayIconHost(mainWindow, venster.Icon(_T("logo.ico")))
+local trayIconHost = venster.TrayIconHost(mainWindow, venster.Icon("logo.ico"))
 trayIconHost:create()
 
 local app = venster.Application(mainWindow)

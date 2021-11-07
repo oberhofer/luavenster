@@ -19,34 +19,34 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 -- create main window
 
 local mainWindow = venster.Dialog{
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Label{
       id = "btnSouth",
-      label = _T"South",
+      label = "South",
       style = bor(WS_VISIBLE, WS_BORDER)
     },
 
     venster.Button{
       id = "btnWest",
-      label = _T"West",
+      label = "West",
     },
 
     venster.Button{
       id = "btnNorth",
-      label = _T"North",
+      label = "North",
     },
 
     venster.Button{
       id = "btnEast",
-      label = _T"East",
+      label = "East",
     },
 
     venster.Label{
       id = "btnCenter",
-      label = _T"Center",
+      label = "Center",
       style = bor(WS_VISIBLE, WS_BORDER)
     },
   },

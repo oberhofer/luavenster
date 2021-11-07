@@ -20,7 +20,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   OnClose = function(self)
@@ -31,7 +31,7 @@ local mainWindow = venster.Window{
   children = {
     venster.TreeView{
       id = "treeView",
-      label  = _T"Tree",
+      label  = "Tree",
       style  = bor(WS_CHILD + WS_VISIBLE + TVS_HASLINES + TVS_LINESATROOT + TVS_HASBUTTONS),
       pos    = { x=0, y=0, w=100, h=100 }
     }
@@ -46,16 +46,16 @@ local mainWindow = venster.Window{
 
 	local tv = self.children.treeView
 
-    local root = tv:AddItem(0, 0, { text = _T("root") } )
+    local root = tv:AddItem(0, 0, { text = "root" } )
 
-    local subitem = tv:AddItem(root, 0, { text = _T("subitem") } )
+    local subitem = tv:AddItem(root, 0, { text = "subitem" } )
 
     tv:AddItems(subitem, TVI_LAST,
       {
-        { _T("child1") },
-        { _T("child2") },
-        { _T("child3") },
-        { _T("child4") }
+        { "child1" },
+        { "child2" },
+        { "child3" },
+        { "child4" }
       }
     )
 

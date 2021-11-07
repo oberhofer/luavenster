@@ -15,32 +15,32 @@ local winapi = require("luawinapi")
 --==============================================================
 
 local mainWindow = venster.Window{
-  label = _T("Main window"),
+  label = "Main window",
 
   children = {
     venster.Button{
       id = "btnSouth",
-      label = _T"South",
+      label = "South",
     },
 
     venster.Button{
       id = "btnWest",
-      label = _T"West",
+      label = "West",
     },
 
     venster.Button{
       id = "btnNorth",
-      label = _T"North",
+      label = "North",
     },
 
     venster.Button{
       id = "btnEast",
-      label = _T"East",
+      label = "East",
     },
 
     venster.Button{
       id = "btnCenter",
-      label = _T"Center",
+      label = "Center",
     },
   },
 

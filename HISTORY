@@ -25,3 +25,8 @@
 * depend on luawinapi version 1.4.0-1
 * support popup menues
 * support tray icons
+
+2.0.0
+
+* depend on luawinapi version 2.0.0-1
+* use UTF-8 encoded strings

@@ -18,31 +18,31 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 --==============================================================
 
 local mainWindow = venster.Window{
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Button{
       id = "btnTop",
-      label  = _T"top",
+      label  = "top",
       pos    = { x=100, y=0, w=100, h=100 }
     },
 
     venster.Panel{
       id = "panel",
-      label  = _T"panel",
+      label  = "panel",
       pos    = { x=100, y=0, w=100, h=100 },
 
       children = {
         venster.Button{
           id = "btnBottomLeft",
-          label  = _T"bottom left",
+          label  = "bottom left",
           pos    = { x=0, y=0, w=100, h=100 }
         },
 
         venster.Button{
           id = "btnBottomRight",
-          label  = _T"bottom right",
+          label  = "bottom right",
           pos    = { x=100, y=0, w=100, h=100 }
         },
       },

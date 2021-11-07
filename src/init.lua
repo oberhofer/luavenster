@@ -140,13 +140,13 @@ local function internalWndProc(hwnd, msg, wParam, lParam, object, prevproc)
   if (widget) then
     local handler = widget[msg]
 
-    -- print("msg", toASCII(widget.label), MSG_CONSTANTS[msg] or msg, wParam, lParam, hwnd, widget)
+    -- print("msg", widget.label, MSG_CONSTANTS[msg] or msg, wParam, lParam, hwnd, widget)
 
     if (handler) then
       if ("function" == type(handler)) then
         local result = handler(widget, wParam, lParam)
 
-        -- print("msg", toASCII(widget.label), MSG_CONSTANTS[msg] or msg, wParam, lParam, msgprocessed, result, (result or 0))
+        -- print("msg", widget.label, MSG_CONSTANTS[msg] or msg, wParam, lParam, msgprocessed, result, (result or 0))
 
         -- returning nil means msg has not been processed
         if (nil ~= result) then
@@ -175,8 +175,8 @@ local function internalWndProc(hwnd, msg, wParam, lParam, object, prevproc)
       local hwndfrom = winapi.WrapWindow(nmh.hwndFrom)
       local widget = peerToWindow(hwndfrom)
 
-      -- print(MSG_CONSTANTS[msg] or msg, widget and toASCII(widget.label))
-      -- print("WM_NOTIFY", widget and toASCII(widget.label), (0xFFFFFFFF - nmh.code + 1) )
+      -- print(MSG_CONSTANTS[msg] or msg, widget and widget.label)
+      -- print("WM_NOTIFY", widget and widget.label, (0xFFFFFFFF - nmh.code + 1) )
 
       if (widget) then
         local handler = widget[msg]
@@ -219,7 +219,7 @@ end
 function registerclass(classname, args)
   if (not windowClasses[classname]) then
 
-    print("registerclass ", toASCII(classname))
+    print("registerclass ", classname)
 
     -- takes object, msgproc, errorfunc
     local WndProc_callback = winapi.WndProc.new(nil, internalWndProc, internalErrorFunc)
@@ -238,7 +238,7 @@ function registerclass(classname, args)
     wndClass.hCursor        = winapi.LoadCursorW(NULL, IDC_ARROW);
     wndClass.hbrBackground  = args.hbrBackground;
     wndClass.lpszMenuName   = 0
-    wndClass.lpszClassName  = classname
+    wndClass.lpszClassName  = winapi.widestringfromutf8(classname)
 
     local atom = winapi.RegisterClassW(wndClass);
     if (not atom) then
@@ -276,7 +276,7 @@ function mtMenu:setMenuItemText(id, text)
   mii.hbmpChecked = 0
   mii.hbmpUnchecked = 0
   mii.dwItemData = 0
-  mii.dwTypeData = _T(text)
+  mii.dwTypeData = winapi.widestringfromutf8(text)
   mii.cch = 0
 
   return winapi.SetMenuItemInfoW(self.hmenu, id, 0, mii)
@@ -291,10 +291,10 @@ local function CreateSubMenu(items)
       local submenu = CreateSubMenu(item)
 
       if (submenu) then
-        winapi.AppendMenuW(hmenu, MF_POPUP, submenu, _T(item.name) )
+        winapi.AppendMenuW(hmenu, MF_POPUP, submenu, item.name )
       else
         local flags = item.flags or bor(MF_ENABLED, MF_STRING)
-        winapi.AppendMenuW(hmenu, flags, item.id or 0, _T(item.name))
+        winapi.AppendMenuW(hmenu, flags, item.id or 0, item.name)
       end
     end
 
@@ -311,10 +311,10 @@ local function CreateMenu(items)
     local submenu = CreateSubMenu(item)
 
     if (submenu) then
-      winapi.AppendMenuW(hmenu, MF_POPUP, submenu, _T(item.name) )
+      winapi.AppendMenuW(hmenu, MF_POPUP, submenu, item.name)
     else
       local flags = item.flags or bor(MF_ENABLED, MF_STRING)
-      winapi.AppendMenuW(hmenu, flags, item.id or 0, _T(item.name))
+      winapi.AppendMenuW(hmenu, flags, item.id or 0, item.name)
     end
   end
 
@@ -548,7 +548,7 @@ mtWindow[WM_PAINT] = function(self, wParam, lParam)
 end
 
 mtWindow[WM_WINDOWPOSCHANGED] = function(self, wParam, lParam)
-  -- print("WM_WINDOWPOSCHANGED", self.class, toASCII(self.label))
+  -- print("WM_WINDOWPOSCHANGED", self.class, self.label)
   if (self.layout) then
     self.layout:layoutContainer(self)
   else
@@ -563,7 +563,7 @@ end
 function mtWindow:msgbox(text, title, buttons)
   buttons = buttons or MB_OK
   title = title or self.label
-  return winapi.MessageBoxW(self.hwnd, _T(text), _T(title), buttons)
+  return winapi.MessageBoxW(self.hwnd, text, title, buttons)
 end
 
 function mtWindow:show(showwnd)
@@ -643,7 +643,7 @@ function mtWindow:activate()
 end
 
 function mtWindow:setText(text)
-  winapi.SendMessageW(self.hwnd, WM_SETTEXT, 0, text)
+  winapi.SendMessageW(self.hwnd, WM_SETTEXT, 0, winapi.widestringfromutf8(text))
 end
 
 function mtWindow:setIcon(which, icon)
@@ -687,7 +687,7 @@ function mtWindow:endmodal(result)
 end
 
 function mtWindow:runmodal(parent, ...)
-  print("-> mtWindow:runmodal", self and toASCII(self.label))
+  print("-> mtWindow:runmodal", self and self.label)
 
   self.modal_parent = parent
 
@@ -707,7 +707,7 @@ function mtWindow:runmodal(parent, ...)
   end
   self:show()
 
-  -- print("set active frame", toASCII(self.label))
+  -- print("set active frame", self.label)
   local prevFrame = activeFrame
   activeFrame = self
 
@@ -736,7 +736,7 @@ function mtWindow:runmodal(parent, ...)
 
   activeFrame = prevFrame
 
-  print("<- mtWindow:runmodal", self and toASCII(self.label), self.result, self.hwnd)
+  print("<- mtWindow:runmodal", self and self.label, self.result, self.hwnd)
 
   -- destroy dialog
   -- winapi.DestroyWindow(self.hwnd);
@@ -748,7 +748,7 @@ function mtWindow:runmodal(parent, ...)
   --     self.menu.hmenu = nil
   -- end
 
-  -- print("restore active frame", toASCII(prevFrame.label))
+  -- print("restore active frame", prevFrame.label)
   activeFrame = prevFrame
 
   -- return result
@@ -757,18 +757,18 @@ end
 
 
 function mtWindow:create(parent)
-  print("mtWindow:create ", toASCII(self.label), parent)
+  print("mtWindow:create ", self.label, parent)
 
   self.parent = parent
 
   self.ctrlid = idGenerator:createid()
   if (not self.classregistered) then
     self.classregistered = true
-    self.classname = self.classname or _T( "guiwin_" .. self.ctrlid )
+    self.classname = self.classname or ("guiwin_" .. self.ctrlid)
     registerclass(self.classname, self)
   end
 
-  -- print("after registerclass", toASCII(self.label))
+  -- print("after registerclass", self.label)
 
   local x, y, w, h = getPosSize(self)
   local style   = self.style or WS_VISIBLE
@@ -790,7 +790,7 @@ function mtWindow:create(parent)
   local hwnd = winapi.CreateWindowExW(
       exstyle,
       self.classname,           -- window class name
-      self.label .. "\0\0",     -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       parenthwnd or 0,          -- parent window handle
@@ -810,10 +810,10 @@ function Window(args, mt)
   if ("string"==type(args)) then
     self = {  }
   else
-    self = args or { label=_T"" }
+    self = args or { label="" }
   end
 
-  self.label = self.label or _T""
+  self.label = self.label or ""
 
   setmetatable(self, { __index = mt or mtWindow } )
 
@@ -827,7 +827,7 @@ end
 local WM_USER_TASKBAR = WM_USER + 1
 
 -- this message is send when explorer restarts after a crash:
-local WM_TASKBAR_CREATED = winapi.RegisterWindowMessageW(_T("TaskbarCreated"))
+local WM_TASKBAR_CREATED = winapi.RegisterWindowMessageW("TaskbarCreated")
 
 mtTrayIconHost = setmetatable({ class="TrayIconHost" }, { __index = mtWindow })
 
@@ -995,7 +995,7 @@ function mtButton:recalcSize()
 end
 
 function mtButton:getPreferredSize()
-  -- print("mtButton:getPreferredSize", toASCII(self.label))
+  -- print("mtButton:getPreferredSize", self.label)
 
   -- if we have a layout manager, use it to calculate
   -- the preferredSize.
@@ -1019,8 +1019,8 @@ function mtButton:create(parent)
 
   local hwnd = winapi.CreateWindowExW(
       0,
-      _T("BUTTON"),             -- window class name
-      self.label .. "\0\0",     -- window caption
+      "BUTTON",                 -- window class name
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1099,8 +1099,8 @@ function mtLabel:create(parent)
 
   local hwnd = winapi.CreateWindowExW(
       0,
-      _T("Static"),             -- window class name
-      self.label .. "\0\0",     -- window caption
+      "Static",                 -- window class name
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1139,8 +1139,8 @@ function mtEdit:create(parent)
 
   local hwnd = winapi.CreateWindowExW(
       0,
-      _T("EDIT"),               -- window class name
-      self.label .. "\0\0",     -- window caption
+      "EDIT",                   -- window class name
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1164,7 +1164,7 @@ end
 ---------------------------------------------------------------------
 -- ListView
 --
-WC_LISTVIEWW = _T("SysListView32")
+WC_LISTVIEWW = "SysListView32"
 
 mtListView = setmetatable({ class="ListView" }, { __index =  mtWindow })
 
@@ -1173,7 +1173,7 @@ mtListView.AddColumn = function(self, iCol, text, cx)
   lvc.mask = bor(LVCF_FMT, LVCF_WIDTH, LVCF_TEXT)
   lvc.fmt = LVCFMT_LEFT
   lvc.cx = cx
-  lvc.pszText = text .. "\0\0"
+  lvc.pszText = winapi.widestringfromutf8(text)
   winapi.SendMessageW(self.hwnd, LVM_INSERTCOLUMNW, iCol-1, lvc)
 end
 
@@ -1190,13 +1190,13 @@ mtListView.AddItem = function(self, iRow, item)
   lvi.mask     = bor(LVIF_TEXT, LVIF_IMAGE)
   lvi.iItem    = iRow-1
   lvi.iSubItem = 0
-  lvi.pszText = item.text .. "\0\0"
+  lvi.pszText = winapi.widestringfromutf8(item.text)
   lvi.iImage   = item.imgidx or 0
   winapi.SendMessageW(self.hwnd, LVM_INSERTITEMW, 0, lvi)
   if (item.subitems) then
     for idx,v in ipairs(item.subitems) do
       lvi.iSubItem = idx
-      lvi.pszText  = v.text .. "\0\0"
+      lvi.pszText  = winapi.widestringfromutf8(v.text)
       lvi.iImage   = v.imgidx
       winapi.SendMessageW(self.hwnd, LVM_SETITEMW, 0, lvi)
     end
@@ -1208,7 +1208,7 @@ mtListView.SetItemText = function(self, item, subitem, text)
   lvi.mask     = bor(LVIF_TEXT)
   lvi.iItem    = item-1
   lvi.iSubItem = subitem-1
-  lvi.pszText  = text .. "\0\0"
+  lvi.pszText  = winapi.widestringfromutf8(text)
   lvi.iImage   =  0
   return winapi.SendMessageW(self.hwnd, LVM_SETITEMW, 0, lvi)
 end
@@ -1253,7 +1253,7 @@ mtListView.AddRow = function(self, iRow, rowitems, groupid)
   end
   local msg    = LVM_INSERTITEMW
   for idx, v in ipairs(rowitems) do
-    lvi.pszText = tostring(v) .. "\0\0"
+    lvi.pszText = winapi.widestringfromutf8(v)
     winapi.SendMessageW(self.hwnd, msg, 0, lvi)
     lvi.iSubItem = idx
     msg = LVM_SETITEMW
@@ -1290,7 +1290,7 @@ mtListView.GetItemText = function(self, idx, subitem)
   assert(subitem > 0)
   local lvi = winapi.LVITEMW:new()
   local result = string.rep("\0", 514)
-  lvi.pszText    = result
+  lvi.pszText    = winapi.widestringfromutf8(result)
   lvi.iSubItem   = subitem-1
   lvi.cchTextMax = 512/2
   local len = winapi.SendMessageW(self.hwnd, LVM_GETITEMTEXTW, idx-1, lvi)
@@ -1379,7 +1379,7 @@ function mtListView:create(parent)
   local hwnd = winapi.CreateWindowExW(
       0,
       WC_LISTVIEWW,             -- window class name
-      self.label .. "\0\0",     -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1426,12 +1426,12 @@ end
 --------------------------------------------------------------------
 -- TreeView
 --
-WC_TREEVIEWW = _T("SysTreeView32")
+WC_TREEVIEWW = "SysTreeView32"
 
 mtTreeView = setmetatable({ class="TreeView" }, { __index =  mtWindow })
 
 mtTreeView.AddItem = function(self, parent, after, item)
-  local text       = item.text .. "\0\0"
+  local text       = item.text
   local tvi        = winapi.TVINSERTSTRUCTW:new()
   local mask       = TVIF_TEXT
   if (nil ~= item.param) then
@@ -1447,7 +1447,7 @@ mtTreeView.AddItem = function(self, parent, after, item)
   tvi.hParent      = parent
   tvi.hInsertAfter = after
   tvi.item.mask    = mask
-  tvi.item.pszText = text
+  tvi.item.pszText = winapi.widestringfromutf8(text)
   tvi.item.cchTextMax = #text / 2;
   tvi.item.lParam        = item.param or 0
   tvi.item.iImage        = item.image or 0
@@ -1600,7 +1600,7 @@ function mtTreeView:create(parent)
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
       WC_TREEVIEWW,             -- window class name
-      self.label .. "\0\0",     -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1621,7 +1621,7 @@ end
 --------------------------------------------------------------------
 -- TabControl
 --
-WC_TABCONTROLW = _T("SysTabControl32")
+WC_TABCONTROLW = "SysTabControl32"
 
 mtTabControl = setmetatable({ class="TabControl" }, { __index =  mtWindow })
 
@@ -1636,7 +1636,7 @@ function mtTabControl:create(parent)
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
       WC_TABCONTROLW,           -- window class name
-      self.label .. "\0\0",           -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1692,10 +1692,10 @@ end
 
 
 function mtTabControl:InsertItem(text, pos)
-    pos = pos or self:GetItemCount()
+  pos = pos or self:GetItemCount()
   local tci = winapi.TCITEMW:new()
   tci.mask    = TCIF_TEXT
-  tci.pszText = text .. "\0\0"
+  tci.pszText = winapi.widestringfromutf8(text)
   tci.iImage  = -1
   return winapi.SendMessageW(self.hwnd, TCM_INSERTITEMW, pos, tci)
 end
@@ -1772,7 +1772,7 @@ function mtDialog:create(parent)
   local hwnd = winapi.CreateWindowExW(
       self.exstyle or 0,
       WC_DIALOG,                -- window class name
-      self.label .. "\0\0",     -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       hParent,
@@ -1784,7 +1784,7 @@ function mtDialog:create(parent)
   setWindowPeer(hwnd, self)
 
   -- set dialog procedure
-  winapi.SetWindowLongPtr(hwnd, DWLP_DLGPROC, winapi.GetDefDlgProc());
+  winapi.SetWindowLongW(hwnd, DWLP_DLGPROC, winapi.GetDefDlgProcW());
 
   -- set window font
   -- SetWindowFont(hdlg, hf, FALSE);
@@ -1879,10 +1879,10 @@ function mtPocketPCFrame:ReleaseMenuKeys()
 end
 
 function mtPocketPCFrame:create(parent)
-  print("mtPocketPCFrame:create ", toASCII(self.label))
+  print("mtPocketPCFrame:create ", self.label)
 
   self.ctrlid = idGenerator:createid()
-  self.classname = self.classname or _T( "guiwin_" .. self.ctrlid )
+  self.classname = self.classname or ("guiwin_" .. self.ctrlid )
 
   registerclass(self.classname, self)
 
@@ -1902,7 +1902,7 @@ function mtPocketPCFrame:create(parent)
   local hwnd = winapi.CreateWindowExW(
       exstyle,
       self.classname,           -- window class name
-      self.label .. "\0\0",     -- window caption
+      self.label,               -- window caption
       style,                    -- window style
       x,y,w,h,
       parenthwnd or 0,          -- parent window handle
@@ -1990,7 +1990,7 @@ end
 mtPocketPCFrame[WM_ACTIVATE] = function(self, wParam, lParam)
 --[[
   if (WA_INACTIVE ~= LOWORD(wParam)) then
-    print("mtPocketPCFrame_WM_ACTIVATE", toASCII(self.label))
+    print("mtPocketPCFrame_WM_ACTIVATE", self.label)
     winapi.SHFullScreen( self.hwnd, bor(SHFS_SHOWTASKBAR, SHFS_SHOWSIPBUTTON))
   end
 --]]

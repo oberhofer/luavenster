@@ -1121,7 +1121,7 @@ end
 local mtSash = setmetatable({ class="Sash" }, { __index =  mtWindow })
 
 
-mtSash.classname = _T( "guiwin_Sash" )
+mtSash.classname = "guiwin_Sash"
 
 -- load corsor
 mtSash.horzCursor = winapi.LoadCursorW(nil, IDC_SIZENS)
@@ -1240,7 +1240,7 @@ end
 function Sash(args)
   local self = args or { }
 
-  self.label = self.label or _T""
+  self.label = self.label or ""
   self.id    = self.id    or "sash"
 
   setmetatable(self, { __index = mtSash } )

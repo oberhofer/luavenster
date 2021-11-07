@@ -21,7 +21,7 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 
 local mainWindow = venster.Window{
 
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_OVERLAPPEDWINDOW),
 
   OnClose = function(self)
@@ -32,23 +32,23 @@ local mainWindow = venster.Window{
   children = {
     venster.Label{
       id = "label",
-      label = _T("label"),
+      label = "label",
       style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
     },
     venster.TabControl{
       id = "tabcontrol",
-      label = _T("tabcontrol"),
+      label = "tabcontrol",
       style = bor(WS_CHILD, WS_VISIBLE),
       pos   = { x=0, y=0, w=100, h=100 },
       children = {
         venster.Label{
           id = "tab1",
-          label = _T("Tab1"),
+          label = "Tab1",
           style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
         },
         venster.Label{
           id = "tab2",
-          label = _T("Tab2"),
+          label = "Tab2",
           style = bor(WS_VISIBLE, WS_CHILD, WS_BORDER)
         },
       },
@@ -65,9 +65,9 @@ local mainWindow = venster.Window{
 
 
   OnCreate = function(self)
---    self.children.tabcontrol:InsertItem(_T("Tab 1"))
---    self.children.tabcontrol:InsertItem(_T("Tab 2"))
---    self.children.tabcontrol:InsertItem(_T("Tab 3"))
+--    self.children.tabcontrol:InsertItem("Tab 1")
+--    self.children.tabcontrol:InsertItem("Tab 2")
+--    self.children.tabcontrol:InsertItem("Tab 3")
   end,
 }
 

@@ -18,37 +18,37 @@ local band, bor, bxor = bit.band, bit.bor, bit.bxor
 --==============================================================
 
 local mainWindow = venster.Window{
-  label = _T("Main window"),
+  label = "Main window",
   style = bor(WS_VISIBLE, WS_SYSMENU),
 
   children = {
     venster.Button{
       id = "btnSouth",
-      label = _T"South",
+      label = "South",
       pos = { x=0, y=0, w=100, h=100 }
     },
 
     venster.Button{
       id = "btnWest",
-      label = _T"West",
+      label = "West",
       pos = { x=0, y=0, w=100, h=100 }
     },
 
     venster.Button{
       id = "btnNorth",
-      label = _T"North",
+      label = "North",
       pos = { x=0, y=0, w=100, h=100 }
     },
 
     venster.Button{
       id = "btnEast",
-      label = _T"East",
+      label = "East",
       pos = { x=0, y=0, w=100, h=100 }
     },
 
     venster.Button{
       id = "btnCenter",
-      label = _T"Center",
+      label = "Center",
       pos = { x=0, y=0, w=100, h=100 }
     },
   },
@@ -68,7 +68,7 @@ local mainWindow = venster.Window{
     -- add button handlers
     for _, ch in ipairs({ childs.btnSouth, childs.btnWest, childs.btnNorth, childs.btnEast, childs.btnCenter }) do
       ch.OnClicked = function (self)
-        self:msgbox("Clicked Item " .. toASCII(self.label), "Info", MB_OK)
+        self:msgbox("Clicked Item " .. self.label, "Info", MB_OK)
       end
     end
     return nil
